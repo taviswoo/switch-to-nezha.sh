@@ -7,7 +7,7 @@ curl -O https://raw.githubusercontent.com/taviswoo/switch-to-nezha.sh/main/switc
 chmod +x switch-to-nezha.sh
 ./switch-to-nezha.sh
 
-## 哪吒探针安全检测
+## 哪吒探针安全检测：
 
 ```bash
 wget -O nezha-check.sh https://raw.githubusercontent.com/taviswoo/switch-to-nezha.sh/refs/heads/main/nezha-check.sh && chmod +x nezha-check.sh && ./nezha-check.sh
