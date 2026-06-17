@@ -80,10 +80,8 @@ if [[ -n "$SERV" ]]; then
 else
     log "  → 未发现恶意服务"
 fi
-
 log "\n[6] 检查公网异常外连（智能白名单过滤）"
 
-# 只看 ESTABLISHED 的 TCP 连接
 RAW_NET=$(ss -tunap 2>/dev/null | grep ESTAB || true)
 
 SUS_NET=""
@@ -123,14 +121,24 @@ while read -r line; do
         fi
     fi
 
-    # 跳过 nezha-agent 访问 443（Cloudflare / 面板）
+    # 跳过哪吒 agent（nezha-agent）访问 443
     if echo "$line" | grep -q "nezha-agent"; then
         if echo "$line" | grep -q ":443 "; then
             continue
         fi
     fi
 
-    # 其余外连视为可疑，记录下来
+    # 跳过 Xray（xray-linux-amd64 / xray-linux-amd6）
+    if echo "$line" | grep -Eq "xray-linux-amd64|xray-linux-amd6"; then
+        continue
+    fi
+
+    # 跳过 Flux（flux_agent）
+    if echo "$line" | grep -q "flux_agent"; then
+        continue
+    fi
+
+    # 其余外连视为可疑
     SUS_NET+="$line"$'\n'
 done <<< "$RAW_NET"
 
@@ -140,7 +148,6 @@ if [[ -n "$SUS_NET" ]]; then
 else
     log "  → 未发现公网异常外连"
 fi
-
 log "\n====================================="
 log " 自动分析结果："
 log "====================================="
