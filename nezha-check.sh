@@ -1,5 +1,5 @@
 #!/bin/bash
-# Nezha Security Check Script (Auto Result)
+# Nezha Security Check Script (Optimized)
 # Author: Woo
 
 REPORT="/tmp/nezha_security_report_$(date +%F_%H-%M-%S).log"
@@ -15,7 +15,7 @@ mark_risk() {
 }
 
 echo "====================================="
-echo " Nezha Security Check Script (Linux)"
+echo " Nezha Security Check Script (Optimized)"
 echo " Report: $REPORT"
 echo "====================================="
 
@@ -45,12 +45,12 @@ else
 fi
 
 log "\n[3] 检查可疑进程"
-PROC=$(ps aux | grep -E "live|SQLlite|nezha-agent" | grep -v grep)
+PROC=$(ps aux | grep -E "live|SQLlite" | grep -v grep)
 if [[ -n "$PROC" ]]; then
-    mark_risk "发现可疑进程（live.exe / SQLlite / 异常 agent）"
+    mark_risk "发现恶意进程（live.exe / SQLlite）"
     echo "$PROC" >> "$REPORT"
 else
-    log "  → 未发现可疑进程"
+    log "  → 未发现恶意进程"
 fi
 
 log "\n[4] 检查可疑文件"
@@ -74,21 +74,21 @@ done
 [[ $FOUND_FILE -eq 0 ]] && log "  → 未发现可疑文件"
 
 log "\n[5] 检查可疑 systemd 服务"
-SERV=$(systemctl list-units --type=service | grep -E "sql|lite|live|agent")
+SERV=$(systemctl list-units --type=service | grep -E "SQLlite|live")
 if [[ -n "$SERV" ]]; then
-    mark_risk "发现可疑 systemd 服务"
+    mark_risk "发现恶意 systemd 服务"
     echo "$SERV" >> "$REPORT"
 else
-    log "  → 未发现可疑服务"
+    log "  → 未发现恶意服务"
 fi
 
-log "\n[6] 检查异常外连"
-NET=$(ss -tunap | grep -E "mid|bj2|5555|8008")
+log "\n[6] 检查异常外连（过滤 Docker / 本地流量）"
+NET=$(ss -tunap | grep ESTAB | grep -v "127.0.0.1" | grep -v "172.1" | grep -v "docker-proxy" | grep -v "openresty")
 if [[ -n "$NET" ]]; then
-    mark_risk "发现可疑外连（可能被远程控制）"
+    mark_risk "发现公网可疑外连（可能被远程控制）"
     echo "$NET" >> "$REPORT"
 else
-    log "  → 未发现异常外连"
+    log "  → 未发现公网异常外连"
 fi
 
 log "\n====================================="
@@ -97,13 +97,10 @@ log "====================================="
 
 if [[ $RISK -eq 0 ]]; then
     echo -e "\n🟢 **系统状态：安全**"
-    echo "未发现任何可疑行为。"
 elif [[ $RISK -le 2 ]]; then
     echo -e "\n🟡 **系统状态：存在可疑项**"
-    echo "建议进一步检查报告：$REPORT"
 else
     echo -e "\n🔴 **系统状态：高危（疑似已被入侵）**"
-    echo "强烈建议立即处理，并查看报告：$REPORT"
 fi
 
 echo -e "\n检查完成。"
